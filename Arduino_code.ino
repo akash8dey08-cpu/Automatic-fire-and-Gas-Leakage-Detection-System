@@ -20,10 +20,42 @@ int buttonPin = 7;
 
 int gasThreshold = 600;
 
+//EMA to stabilize basesline 
 float alpha = 0.01;
 float mq2_baseline = 0;
 float mq5_baseline = 0;
 float mq7_baseline = 0;
+
+//EMA to stabilize raw analog inputs from MQ sensors 
+float alpha_signal = 0.20; // Filter weight (0.1 to 0.3 is ideal for noise)
+float mq2_filtered = 0;
+float mq5_filtered = 0;
+float mq7_filtered = 0;
+
+String lastLine1 = "";
+String lastLine2 = "";
+
+String detectedGas = "None";
+String candidateGas = "None";
+unsigned long hazardStartTime = 0;
+unsigned long confirmationTime = 2000;
+
+void updateLCD(String line1, String line2)
+{
+  if(line1 != lastLine1 || line2 != lastLine2)
+  {
+    lcd.clear();
+
+    lcd.setCursor(0,0);
+    lcd.print(line1);
+
+    lcd.setCursor(0,1);
+    lcd.print(line2);
+
+    lastLine1 = line1;
+    lastLine2 = line2;
+  }
+}
 
 void setup()
 {
@@ -40,42 +72,51 @@ void setup()
   Serial.begin(9600);
 
    // 1. Warm-up 
-  Serial.println("Warming up sensors... please wait 60s");
+  // Serial.println("Warming up sensors... please wait 15 min");
   lcd.print("WARMING UP");
-  delay(60000); 
-
+  //delay(900000); //idealy 15 mins for warming up.
+  
   // 2. Auto-Calibration
-  Serial.println("Calibrating baselines in clean air...");
+  // Serial.println("Calibrating baselines in clean air...");
   lcd.setCursor(0,0);
   lcd.print("INITIALIZING");
   float sum2 = 0, sum5 = 0, sum7 = 0;
-  int samples = 50;
+  int samples = 50; 
   
   for(int i = 0; i < samples; i++) {
     int gas1 = analogRead(mq2);
     int gas2 = analogRead(mq5);
     int gas3 = analogRead(mq7);
-    Serial.print("MQ2: "); Serial.print(gas1);
-    Serial.print(" MQ5: "); Serial.print(gas2);
-    Serial.print(" MQ7: "); Serial.print(gas3);
+    // Serial.print("MQ2: "); Serial.print(gas1);
+    // Serial.print(" MQ5: "); Serial.print(gas2);
+    // Serial.print(" MQ7: "); Serial.print(gas3);
+    // Serial.println("");
 
-    sum2 += analogRead(A0);
-    sum5 += analogRead(A1);
-    sum7 += analogRead(A2);
+
+    sum2 += gas1;
+    sum5 += gas2;
+    sum7 += gas3;
     delay(100);
   }
   
-   mq2_baseline = sum2 / samples;
-   mq5_baseline = sum5 / samples;
-   mq7_baseline = sum7 / samples;
+  mq2_baseline = sum2 / samples;
+  mq5_baseline = sum5 / samples;
+  mq7_baseline = sum7 / samples;
 
-  Serial.print("MQ2_baseline: "); Serial.print(mq2_baseline);
-  Serial.print(" MQ5_baseline: "); Serial.print(mq5_baseline);
-  Serial.print(" MQ7_baseline: "); Serial.print(mq7_baseline);
+  mq2_filtered = mq2_baseline;
+  mq5_filtered = mq5_baseline;
+  mq7_filtered = mq7_baseline;
+
+  // Serial.print("MQ2_baseline: "); Serial.println(mq2_baseline);
+  // Serial.print(" MQ5_baseline: "); Serial.println(mq5_baseline);
+  // Serial.print(" MQ7_baseline: "); Serial.println(mq7_baseline);
   
-  Serial.println("System Ready!");
+  //Serial.println("System Ready!");
   lcd.setCursor(0,0);
   lcd.print("SYSTEM READY !");
+
+  Serial.println("time,raw1,raw2,raw3,filt1,filt2,filt3,base1,base2,base3,norm1,norm2,norm3,temp,humidity,fire,gas");
+
 }
 
 void loop()
@@ -86,31 +127,46 @@ void loop()
   int flame = digitalRead(flamePin);
   float temp = dht.readTemperature();
 
-  float mq2_norm = (gas1 - mq2_baseline) / mq2_baseline;
-  float mq5_norm = (gas2 - mq5_baseline) / mq5_baseline;
-  float mq7_norm = (gas3 - mq7_baseline) / mq7_baseline;
 
-   String detectedGas = "None";
-  
+//EMA for raw mq sensor values 
+  mq2_filtered = (alpha_signal * gas1) + ((1.0 - alpha_signal) * mq2_filtered);
+  mq5_filtered = (alpha_signal * gas2) + ((1.0 - alpha_signal) * mq5_filtered);
+  mq7_filtered = (alpha_signal * gas3) + ((1.0 - alpha_signal) * mq7_filtered);
+
+  float mq2_norm = (mq2_filtered - mq2_baseline) / mq2_baseline;
+  float mq5_norm = (mq5_filtered - mq5_baseline) / mq5_baseline;
+  float mq7_norm = (mq7_filtered - mq7_baseline) / mq7_baseline;
+
+  String currentCandidate = "None";
+
   if (mq7_norm > 0.2 && mq2_norm < 0.1) {
-    detectedGas = "Carbon Monoxide";
+    currentCandidate = "Carbon Monoxide";
   } 
   else if (mq2_norm > 0.2 && mq5_norm > 0.2) {
-    detectedGas = "LPG / Propane";
+    currentCandidate = "LPG/Propane";
   } 
   else if (mq2_norm > 0.2 && mq5_norm < 0.1) {
-    detectedGas = "Smoke / Fire";
+    currentCandidate = "Smoke/Fire";
   }
   else if (mq5_norm > 0.2 && mq2_norm < 0.15) {
-    detectedGas = "Methane / NG";
+    currentCandidate = "Methane/NG";
   }
 
-  Serial.print("MQ2_norm: "); Serial.print(mq2_norm);
-  Serial.print(" MQ5_norm: "); Serial.print(mq5_norm);
-  Serial.print(" MQ7_norm: "); Serial.print(mq7_norm);
-  Serial.print(" Temp: "); Serial.println(temp);
-  Serial.print(" Flame: "); Serial.println(flame);
-  Serial.print("Detected Gas: "); Serial.println(detectedGas);
+  // 2. TEMPORAL CONFIRMATION LOGIC
+  if (currentCandidate != "None") {
+    if (currentCandidate == candidateGas) {
+      if (millis() - hazardStartTime >= confirmationTime) {
+        detectedGas = candidateGas; 
+      }
+    } else {
+      candidateGas = currentCandidate;
+      hazardStartTime = millis();
+    }
+  } else {
+    candidateGas = "None";
+    detectedGas = "None";
+    hazardStartTime = 0;
+  }
 
   bool gasDetected = (mq2_norm > 0.15 || mq5_norm > 0.15 || mq7_norm > 0.15);
   bool fireDetected = (flame == LOW);
@@ -124,7 +180,7 @@ void loop()
   mq5_baseline = (1 - alpha) * mq5_baseline + alpha * gas2;
   mq7_baseline = (1 - alpha) * mq7_baseline + alpha * gas3;
 
-  Serial.println("Baseline updating...");
+  //Serial.println("Baseline updating...");
  }
 
   // --- ACTION LOGIC ---
@@ -132,37 +188,57 @@ void loop()
     digitalWrite(buzzerPin, HIGH);
     digitalWrite(fanPin, HIGH);
 
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("DANGER!");
-    lcd.setCursor(0, 1);
-
+    // Dynamic LCD text generation based on hazard type
     if (gasDetected && fireDetected) {
-      lcd.print("FIRE & ");
-      lcd.print(detectedGas);
+      updateLCD("DANGER!", "FIRE & " + detectedGas);
     } else if (gasDetected) {
-      lcd.print("Gas: ");
-      lcd.print(detectedGas);
+      updateLCD("DANGER!", "Gas: " + detectedGas);
     } else {
-      lcd.print("Fire Detected!");
+      updateLCD("DANGER!", "Fire Detected!");
     }
-
-    // Serial Logging
-    Serial.print("ALERT! Gas:"); Serial.print(detectedGas);
-    Serial.print(" Fire:"); Serial.println(fireDetected ? "YES" : "NO");
   } 
+
+
   else {
     digitalWrite(buzzerPin, LOW);
     digitalWrite(fanPin, LOW);
 
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("System Safe");
-    lcd.setCursor(0, 1);
-    lcd.print("Temp: ");
-    lcd.print(temp);
-    lcd.print("C");
+    // Normal operation display
+    updateLCD("System Safe", "Temp: " + String(temp) + "C");
   }
 
-  delay(500);
+//--- HUMAN-READABLE-DATA---//
+  // Serial.println("=========================================");
+  // Serial.print("STATUS:\t\tGas: "); Serial.print(detectedGas); Serial.print("\tFire: "); Serial.print(fireDetected ? "YES" : "NO"); Serial.print("\tTemp: "); Serial.print(temp,1); Serial.println("C");
+  // Serial.println("-----------------------------------------");
+  // Serial.println("\t\tMQ2\tMQ5\tMQ7");
+  // Serial.print("RAW:\t\t");      Serial.print(gas1);           Serial.print("\t"); Serial.print(gas2);           Serial.print("\t"); Serial.println(gas3);
+  // Serial.print("FILTERED:\t");    Serial.print(mq2_filtered,0); Serial.print("\t"); Serial.print(mq5_filtered,0); Serial.print("\t"); Serial.println(mq7_filtered,0);
+  // Serial.print("BASELINE:\t");    Serial.print(mq2_baseline,0); Serial.print("\t"); Serial.print(mq5_baseline,0); Serial.print("\t"); Serial.println(mq7_baseline,0);
+  // Serial.print("NORMALIZED:\t");  Serial.print(mq2_norm,2);     Serial.print("\t"); Serial.print(mq5_norm,2);     Serial.print("\t"); Serial.println(mq7_norm,2);
+  // Serial.println("=========================================\n");
+//------------------------------------------------------------//
+
+  // --- PRODUCTION MACHINE-READABLE CSV STREAM ---
+  // Format: timestamp,mq2,mq5,mq7,temp,humidity,flame,label
+  // --- PRODUCTION ML CSV STREAM ---
+  Serial.print(millis());               Serial.print(",");
+  Serial.print(gas1);                   Serial.print(","); // Raw values
+  Serial.print(gas2);                   Serial.print(",");
+  Serial.print(gas3);                   Serial.print(",");
+  Serial.print(mq2_filtered, 1);        Serial.print(","); // Filtered values
+  Serial.print(mq5_filtered, 1);        Serial.print(",");
+  Serial.print(mq7_filtered, 1);        Serial.print(",");
+  Serial.print(mq2_baseline, 1);        Serial.print(","); // Baselines
+  Serial.print(mq5_baseline, 1);        Serial.print(",");
+  Serial.print(mq7_baseline, 1);        Serial.print(",");
+  Serial.print(mq2_norm, 4);            Serial.print(","); // Normalized values
+  Serial.print(mq5_norm, 4);            Serial.print(",");
+  Serial.print(mq7_norm, 4);            Serial.print(",");
+  Serial.print(temp, 1);                Serial.print(",");
+  Serial.print(dht.readHumidity(), 1);  Serial.print(",");
+  Serial.print(fireDetected ? 1 : 0);   Serial.print(",");
+  Serial.println(detectedGas);                             // Ends line, NO trailing comma
+
+  delay(1000); 
 }
