@@ -1,8 +1,6 @@
 [readme.md](https://github.com/user-attachments/files/34177584/readme.md)
 # Multi-Sensor Adaptive Electronic Nose for Autonomous Fire & Gas Hazard Mitigation with Real-Time ML Telemetry
-[[https://img.shields.io/badge/%F0%9F%93%84%20Read%20Technical%20Paper-IEEE%20Format-004080?style=for-the-badge&logo=adobeacrobatreader&logoColor=white]](Adaptive_MultiSensor_Electronic_Nose.pdf)
-[[https://img.shields.io/badge/%F0%9F%93%98%20Project%20Report-Doc-1B365D?style=for-the-badge]](Adaptive_E_nose_Project_Report.docx)
-[[https://img.shields.io/badge/Firmware-Arduino%20C%2B%2B-00979D?style=for-the-badge&logo=arduino&logoColor=white]](Arduino_code.ino)
+
 
 > **📄 [Click Here to View the Full Technical Paper](Adaptive_MultiSensor_Electronic_Nose.pdf)**
 > *An embedded safety and data-engineering system that bridges real-time signal conditioning, multi-sensor pattern fusion, autonomous electromechanical hazard mitigation, and 1 Hz 17-feature CSV data logging for supervised Machine Learning models.*
