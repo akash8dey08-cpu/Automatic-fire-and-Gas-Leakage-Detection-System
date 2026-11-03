@@ -1,12 +1,10 @@
 [readme.md](https://github.com/user-attachments/files/34177584/readme.md)
 # Multi-Sensor Adaptive Electronic Nose for Autonomous Fire & Gas Hazard Mitigation with Real-Time ML Telemetry
+[[https://img.shields.io/badge/%F0%9F%93%84%20Read%20Technical%20Paper-IEEE%20Format-004080?style=for-the-badge&logo=adobeacrobatreader&logoColor=white]](Adaptive_MultiSensor_Electronic_Nose.pdf)
+[[https://img.shields.io/badge/%F0%9F%93%98%20Project%20Report-Doc-1B365D?style=for-the-badge]](Adaptive_E_nose_Project_Report.docx)
+[[https://img.shields.io/badge/Firmware-Arduino%20C%2B%2B-00979D?style=for-the-badge&logo=arduino&logoColor=white]](Arduino_code.ino)
 
-[Read IEEE Paper (PDF)](https://www.google.com/search?q=docs/IEEE_Adaptive_Fire_and_Gas_Detection_ML_Paper.pdf)
-[Full Project Report](https://www.google.com/search?q=docs/Updated_Fire_and_Gas_Detection_ML_Project_Report.docx)
-[Firmware](https://www.google.com/search?q=Arduino_code.ino)
-[Hardware](https://www.google.com/search?q=Connections.md)
-
-> **📄 [Click Here to Read the Full IEEE-Style Technical Paper (PDF)](https://www.google.com/search?q=docs/IEEE_Adaptive_Fire_and_Gas_Detection_ML_Paper.pdf)**  
+> **📄 [Click Here to View the Full Technical Paper](Adaptive_MultiSensor_Electronic_Nose.pdf)**
 > *An embedded safety and data-engineering system that bridges real-time signal conditioning, multi-sensor pattern fusion, autonomous electromechanical hazard mitigation, and 1 Hz 17-feature CSV data logging for supervised Machine Learning models.*
 
 ---
@@ -119,7 +117,6 @@ time,raw1,raw2,raw3,filt1,filt2,filt3,base1,base2,base3,norm1,norm2,norm3,temp,h
 
 ## Repository Structure & Documentation
 
-* 📄 **[IEEE-Format Technical Paper (PDF)](https://www.google.com/search?q=docs/IEEE_Adaptive_Fire_and_Gas_Detection_ML_Paper.pdf)** — Concise 5-page, two-column research paper detailing the mathematical formulation, literature comparison, and experimental telemetry evaluation.
-* 📘 **[Comprehensive Engineering Project Report (DOCX)](https://www.google.com/search?q=docs/Updated_Fire_and_Gas_Detection_ML_Project_Report.docx)** — Full documentation including bench test photographs, LCD verification cases, and complete firmware listings.
-* ⚙️ **[Production Firmware (Arduino\_code.ino)](https://www.google.com/search?q=Arduino_code.ino)** — Embedded C/C++ source code for the Arduino Uno R3 (`Wire.h`, `LiquidCrystal_I2C.h`, `DHT.h`).
-* 🔌 **[Hardware Wiring \& Protection Guide (Connections.md)](https://www.google.com/search?q=Connections.md)** — Pin-by-pin wiring tables, $10\text{ k}\Omega$ pull-up notes, and 2N2222 + 1N4007 flyback diode schematic details.
+* 📄 **[Technical Paper (PDF)](Adaptive_MultiSensor_Electronic_Nose.pdf)** — IEEE-style research paper.
+* 📘 **[Engineering Project Report (DOCX)](Adaptive_E_nose_Project_Report.docx)** — Full project report.
+* ⚙️ **[Arduino Firmware](Arduino_code.ino)** — Production embedded C++ code.
